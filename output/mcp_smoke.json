@@ -1,0 +1,26 @@
+{
+  "server": "campus-customs",
+  "database": "data/campus_customs_new.db",
+  "verified_against_db": "sqlite3 queries on data/campus_customs_new.db; all fields matched",
+  "session_prompt": "Problem 4 smoke test: .mcp.json and mcp_server/ are already built (see AI_prompts.md and output/harness.md for context). Call all three campus-customs MCP tools: check_stock_shortfall(CC-HOOD-NAVY, M, 20), get_invoice_status(501), get_rent_status(1). Verify each output against data/campus_customs_new.db with sqlite3, then save output/mcp_smoke.json with the prompt, tool name, and actual output for each. Log Problem 4 in AI_prompts.md (prompt + the follow-up that the first session was rooted in the wrong folder).",
+  "calls": [
+    {
+      "prompt": "Check whether we can fill 20 navy hoodies in size M (CC-HOOD-NAVY, M, 20) for ticket #103.",
+      "tool": "check_stock_shortfall",
+      "arguments": {"sku": "CC-HOOD-NAVY", "size": "M", "qty_requested": 20},
+      "output": {"sku":"CC-HOOD-NAVY","name":"Basic Hoodie Big Yale","size":"M","location":"Aisle A","qty_on_hand":8,"qty_requested":20,"can_fill_from_stock":false,"shortfall":12,"unit_cost":22,"list_price":58,"margin_per_unit_at_list":36,"margin_pct_at_list":62.1,"restock_cost_for_shortfall":264}
+    },
+    {
+      "prompt": "What's the status of invoice 501, and is the vendor blocked from shipping? (ticket #101)",
+      "tool": "get_invoice_status",
+      "arguments": {"invoice_id": 501},
+      "output": {"invoice_id":501,"description":"Rush reprint CC-TEE-WHITE S","amount":840,"status":"open","due_date":"2026-08-28","today":"2026-08-31","is_overdue":true,"days_overdue":3,"vendor_id":1,"vendor_name":"Bulldog Print Co","vendor_specialty":"apparel reprint","vendor_lead_days":5,"vendor_open_invoices":1,"vendor_blocked_from_shipping":true}
+    },
+    {
+      "prompt": "When is rent due on lease 1, and can checking cover it? (ticket #102)",
+      "tool": "get_rent_status",
+      "arguments": {"lease_id": 1},
+      "output": {"lease_id":1,"space_name":"Chapel Street shop","landlord":"Elm City Properties","monthly_rent":2400,"next_due":"2026-09-02","today":"2026-08-31","days_until_due":2,"is_overdue":false,"cash_balances":{"checking":3400},"checking_can_cover_rent":true,"checking_after_rent":1000}
+    }
+  ]
+}

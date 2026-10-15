@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Customs — Resolved Board</title>
+<style>
+  body { margin: 0; font: 16px/1.55 Georgia, "Times New Roman", serif; color: #2b1d10; background: #24160c; }
+  header { padding: 26px 36px 18px; background: linear-gradient(180deg, #2a1a0e, #1b1009); border-bottom: 5px solid #7a5718; color: #f1d27a; }
+  header h1 { margin: 0; font-size: 28px; letter-spacing: 2px; }
+  header p { margin: 6px 0 0; color: #d9c69a; font-size: 15px; }
+  nav { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  nav a { color: #2a1a08; background: linear-gradient(180deg, #f1d27a, #c9a24a 55%, #7a5718); text-decoration: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 14px; }
+  main { max-width: 1520px; margin: 0 auto; padding: 24px 36px 60px; }
+  section { background: #f6ecd2; border: 4px solid #c9a24a; border-radius: 8px; padding: 18px 22px; margin-bottom: 28px; box-shadow: 0 8px 18px rgba(0,0,0,.45); }
+  h2 { margin: 0 0 4px; font-size: 22px; }
+  .stamp { display: inline-block; margin-left: 10px; color: #9b2b23; border: 3px double #9b2b23; border-radius: 6px; padding: 0 10px; transform: rotate(-6deg); font-size: 15px; letter-spacing: 2px; }
+  .meta { color: #5a4630; font-size: 14px; margin: 0 0 10px; }
+  .outcome { margin: 8px 0 14px; }
+  code { font-family: Menlo, monospace; font-size: 13px; background: #efe1bb; padding: 1px 5px; border-radius: 4px; }
+  figure { margin: 0; }
+  figure img { width: 100%; border: 1px solid #7a5718; border-radius: 6px; display: block; }
+  figcaption { font-size: 13px; color: #5a4630; margin-top: 6px; }
+  .summary { color: #f6ecd2; background: #3a2414; border: 1px solid #7a5718; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; }
+  .summary b { color: #f1d27a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Campus Customs — Resolved Board</h1>
+  <p>Real screenshots of the React dashboard (<code style="background:#4a2e17;color:#f1d27a">http://localhost:5173/?ticket=N</code>), taken right after each ticket was resolved in the final full run.</p>
+  <nav><a href="#t101">#101 Bulldog tee</a><a href="#t102">#102 Rent due</a><a href="#t103">#103 Bulk hoodies</a></nav>
+</header>
+<main>
+  <div class="summary">
+    <b>Final full run:</b> reset marker <code>38bfa3fe471c</code> (2026-10-14 23:56:42 UTC), model <code>gpt-6-luna</code>, approvals by <b>David Wingate</b> on the board.<br>
+    <b>Checking:</b> $3,400.00 → $152.00 (invoice 501 −$840, tee PO −$8, rent −$2,400; #103 no change). All three tickets ended <b>resolved</b> in <code>tickets.status</code>.<br>
+    Screenshots were captured with headless Chromium (<code>scripts/screenshot_board.py</code>) against the live board and backend. Each is the full page with the activity tape expanded. Details: <code>output/resolved_tickets.json</code>, <code>output/desk_tickets.html</code>.
+  </div>
+
+  <section id="t101">
+    <h2>#101 · Bulldog tee · Tauhid Zaman <span class="stamp">RESOLVED</span></h2>
+    <p class="meta">Runs <code>4f4cc2f71574</code> → <code>e68b68aa22fd</code> · approvals: request #1 invoice 501 $840, request #2 tee PO $8</p>
+    <p class="outcome">Paid the overdue invoice that was blocking Bulldog Print Co, then ordered 1 size-S tee ($8), expected 2026-09-05. Customer draft #5 explains the timing.</p>
+    <figure><img src="screenshots/ticket_101_resolved.png" alt="React board showing ticket 101 resolved"><figcaption>Captured after run <code>e68b68aa22fd</code> set the ticket to resolved. Cash readout $2,552.00 at the time of capture.</figcaption></figure>
+  </section>
+
+  <section id="t102">
+    <h2>#102 · Rent due · Elm City Properties <span class="stamp">RESOLVED</span></h2>
+    <p class="meta">Runs <code>a08c76f0cfbf</code> → <code>e341e63f11b1</code> · approval: request #3 rent $2,400</p>
+    <p class="outcome">Rent for lease 1 (due 2026-09-02) paid, and <code>next_due</code> advanced to 2026-10-02. Boss resolved the ticket via <code>update_ticket_status</code> (<code>ok: true</code>). Its final summary call then timed out at Portkey, so the second run is logged <code>ok: false</code>, and the board's summary for that run shows no Boss report line.</p>
+    <figure><img src="screenshots/ticket_102_resolved.png" alt="React board showing ticket 102 resolved"><figcaption>Captured after run <code>e341e63f11b1</code>. Cash readout $152.00.</figcaption></figure>
+  </section>
+
+  <section id="t103">
+    <h2>#103 · Bulk hoodie discount · Yale AI Club <span class="stamp">RESOLVED</span></h2>
+    <p class="meta">Run <code>034462b298a1</code> · no approvals needed (no money moved)</p>
+    <p class="outcome">Boss offered the 8 hoodies in stock at 5% off ($55.10 each, $440.80). The 12-unit restock ($264) exceeded the $152 left, so it was declined. Customer draft #17 states the offer.</p>
+    <figure><img src="screenshots/ticket_103_resolved.png" alt="React board showing ticket 103 resolved"><figcaption>Captured after run <code>034462b298a1</code>. All three tickets show RESOLVED stamps; cash readout $152.00.</figcaption></figure>
+  </section>
+</main>
+</body>
+</html>
