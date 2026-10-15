@@ -46,33 +46,113 @@ output/
   audit_trail.json       append-only log of every agent step (full history)
   design.md              dashboard design notes
   mcp_smoke.json         MCP connection smoke test
+  github_url.txt         submission URL
   screenshots/
 tests/                   pytest: MCP safety rules, agent loop, API routes
 scripts/                 screenshot / evidence helpers
 ```
 
-## Running it
+## Setup and running
+
+### 1. Install dependencies
 
 ```bash
-# 1. Python env (Python 3.12)
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env           # add your PORTKEY_API_KEY (or keep it in the class-level .env)
-
-# 2. Backend, from backend/
-cd backend && ../.venv/bin/uvicorn main:app --reload --port 8000
-
-# 3. Dashboard, from frontend/ (new terminal)
-cd frontend && npm install && npm run dev      # http://localhost:5173
+git clone https://github.com/dw565/ai-hw-5-dw.git && cd ai-hw-5-dw
+python3.12 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cd frontend && npm install && cd ..
 ```
 
-On the dashboard:
-1. Click **Reset shop** to restore `campus_customs_new.db` from the original.
-2. Select a ticket and pull the lever to run the team.
-3. Approve payments in the **Approvals** column, and watch the cash gauge.
+Requires Python 3.12 and Node 20+. On Windows, use `.venv\Scripts\python` wherever this README says `.venv/bin/python`.
 
-You can also run without the dashboard: `.venv/bin/python -m backend.run_tickets` resets the working DB and runs all open tickets from the CLI.
+### 2. Set up `PORTKEY_API_KEY`
 
-Tests: `.venv/bin/python -m pytest tests`. They use a throwaway copy of the database and never touch `data/`.
+```bash
+cp .env.example .env
+# edit .env and set PORTKEY_API_KEY=<your Portkey key>
+```
+
+`backend/config.py` loads `.env` from the repo root (and also from a class-level `.env` two folders up, if present). The real `.env` is git-ignored. Every agent calls **only `gpt-6-luna`** through Portkey's OpenAI-compatible endpoint (`https://api.portkey.ai/v1`). The model is set in one place: `MODEL_NAME` in `backend/config.py`.
+
+### 3. Database: original vs. working copy
+
+- `data/campus_customs.db` is the **original**, never written to. The MCP server refuses to point at it.
+- `data/campus_customs_new.db` is the **working copy** the tools update. In this repo it holds the **final results** of the submitted run.
+
+For a clean run of your own, copy the original over the working copy:
+
+```bash
+cp data/campus_customs.db data/campus_customs_new.db
+```
+
+The dashboard's **Reset shop** button (`POST /api/reset`) does the same thing through the MCP server, and so does `python -m backend.run_tickets`, which resets before a full run. Either way you overwrite the submitted final results, so `git checkout data/campus_customs_new.db` restores them.
+
+### 4. Start the MCP server
+
+The backend **starts its own MCP server automatically** over stdio (`backend/mcp_client.py`). For the dashboard flow you don't need to start it yourself.
+
+To run or inspect the server on its own:
+
+```bash
+.venv/bin/python mcp_server/server.py        # FastMCP over stdio, uses data/campus_customs_new.db
+```
+
+To use the tools from **Claude Code**, open the repo root as the project. `.mcp.json` registers the `campus-customs` server with repo-relative paths (`.venv/bin/python mcp_server/server.py`), so it works on any machine once `.venv` exists at the repo root. Approve the server when Claude Code asks, and restart the session if it was already open.
+
+### 5. Start FastAPI
+
+```bash
+cd backend
+../.venv/bin/uvicorn main:app --reload --port 8000
+```
+
+The backend serves at `http://localhost:8000`, with interactive docs at `/docs`. CORS allows the Vite dev server on `http://localhost:5173`.
+
+### 6. Start the React dashboard
+
+```bash
+cd frontend
+npm run dev            # http://localhost:5173  (calls http://localhost:8000; override with VITE_API_BASE)
+```
+
+### 7. A full three-ticket run
+
+1. **Reset first:** click **Reset shop** on the dashboard. Checking returns to $3,400 and tickets 101–103 reopen.
+2. Select **#101** and pull the lever (**Set the team to work**). The activity feed shows each agent, every delegation, and every MCP tool call as it happens.
+3. Approve anything the agents request (see below), then pull the lever again. Boss confirms the payments and resolves the ticket once nothing is waiting on a human.
+4. Repeat for **#102** and **#103**. A resolved ticket gets a RESOLVED stamp. Every step is appended to `output/audit_trail.json`.
+
+CLI alternative, without the dashboard and without approvals:
+
+```bash
+.venv/bin/python -m backend.run_tickets            # resets the DB, then runs all open tickets
+```
+
+### How human payment approval works
+
+1. Agents can only **prepare** money movements:
+   - Accounting or Facilities call `request_payment` for an invoice or rent.
+   - Inventory or Accounting call `propose_purchase_order` for a restock.
+   - The amount always comes from the database, and the request is saved with status `pending_approval`.
+2. The request appears in the dashboard's **Approvals** column. A person types their name under **Signing as** and clicks **Approve & pay** (or **Reject**).
+3. Approval calls `POST /api/payments/{id}/approve`. The backend first checks that cash covers the amount (if not, it returns 409 and records nothing). It then records the decision with `record_human_decision` and calls `execute_payment`.
+4. `record_human_decision` needs a per-process `HUMAN_APPROVAL_TOKEN`. Only the backend and the MCP server have it; it isn't in the repo, a prompt, or any agent's toolset. So **an agent saying "approved" can't move money**.
+5. `execute_payment` runs as one transaction:
+   - It pays only approved requests.
+   - It refuses if the balance would go negative.
+   - It refuses if the obligation is already paid.
+   - It writes a row to `payments` and reduces `cash_accounts`.
+   - It marks the invoice paid, moves the lease's `next_due` forward, or marks the PO as placed.
+
+   The cash gauge on the dashboard drops right after the approval.
+
+### Tests
+
+```bash
+.venv/bin/python -m pytest tests
+```
+
+The tests use a throwaway copy of the original database, never `data/`. The agent-loop and route tests use scripted models, so they don't make real model calls.
 
 ## Shop rules enforced in the tools
 
